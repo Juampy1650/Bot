@@ -18,15 +18,19 @@ const flowOperador = addKeyword(['3','operador'])
             '👉 *2* No es necesario'
         ],
         {capture:true},
-        async (ctx, {gotoFlow}/*,{fallBack}*/ ) =>{
+        async (ctx, {gotoFlow,flowDynamic}/*,{fallBack}*/ ) =>{
             /*if(!ctx.body.includes["1","2","3"]){
                 return fallBack('Esa opcion no es valida')
             }*/
-            if(ctx.body === '1'){
-            consolog("Funciono 1 ")
+            const respuestaO = await ctx.body
+
+            if(respuestaO === '1'){
+            console.log('Funciono 1')
+            return await flowDynamic([{body: '🤝 ¡Excelente! Te contactaremos por este mismo chat, en el horario indicado. 😉'}])
             }
-            if(ctx.body === '2'){
-                consolog("Funciono 2 ")
+            if(respuestaO === '2'){
+            console.log('Funciono 2')
+            return await flowDynamic([{body: '🤝 Fue un gusto atenderte'}])
             }
         }
     )
