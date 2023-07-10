@@ -1,0 +1,40 @@
+const flowMenuInicial = addKeyword(['volver', 'regresar'])
+    .addAnswer(
+        [
+            '🔙 Volviendo al menú inicial',
+            'Escribe el número para seleccionar la opción:',
+            '👉 *1* Realizar un pedido',
+            '👉 *2* Pagina Web',
+            '👉 *3* Contactar con un operador',
+        ],
+        null,
+        { capture: true },
+        async (ctx, { fallBack }) => {
+            if (!['1', '2', '3'].includes(ctx.body)) {
+                return fallBack("Por favor selecciona una opción válida *1, 2, 3*");
+            }
+        },
+        null,
+        [flowOperador, flowPagina, flowPedido]
+    );
+
+const flowBienvenida = addKeyword(["hola", 'pedido'])
+    .addAnswer('Bienvenido')
+    .addAnswer('🙌 Hola, Gracias por comunicarte a Sphera Digital, ¿en qué te podemos ayudar hoy?')
+    .addAnswer(
+        [
+            'Escribe el número para seleccionar la opción',
+            '👉 *1* Realizar un pedido',
+            '👉 *2* Página Web',
+            '👉 *3* Contactar con un operador',
+        ],
+        null,
+        { capture: true },
+        async (ctx, { fallBack }) => {
+            if (!['1', '2', '3'].includes(ctx.body)) {
+                return fallBack("Por favor selecciona una opción válida *1, 2, 3*");
+            }
+        },
+        null,
+        [flowOperador, flowPagina, flowPedido, flowMenuInicial]
+    );
