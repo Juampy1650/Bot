@@ -11,11 +11,11 @@
     "dependencies": {
         "@adiwajshing/baileys": "github:WhiskeySockets/Baileys",
         "@adiwajshing/keyed-db": "^0.2.4",
-        "@bot-whatsapp/bot": "^0.1.29",
-        "@bot-whatsapp/cli": "^0.1.29",
-        "@bot-whatsapp/database": "^0.1.29",
-        "@bot-whatsapp/portal": "^0.1.29",
-        "@bot-whatsapp/provider": "^0.1.29",
+        "@bot-whatsapp/bot": "^0.1.30",
+        "@bot-whatsapp/cli": "^0.1.30",
+        "@bot-whatsapp/database": "^0.1.30",
+        "@bot-whatsapp/portal": "^0.1.30",
+        "@bot-whatsapp/provider": "^0.1.30",
         "google-spreadsheet": "^4.0.2",
         "stripe": "^13.1.0",
         "wa-sticker-formatter": "^4.4.4"
