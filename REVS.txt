@@ -1,0 +1,172 @@
+Funcion para boton de volver al menu
+
+
+const flowMenuInicial = addKeyword(['volver', 'regresar'])
+    .addAnswer(
+        [
+            '🔙 Volviendo al menú inicial',
+            'Escribe el número para seleccionar la opción:',
+            '👉 *1* Realizar un pedido',
+            '👉 *2* Pagina Web',
+            '👉 *3* Contactar con un operador',
+        ],
+        null,
+        { capture: true },
+        async (ctx, { fallBack }) => {
+            if (!['1', '2', '3'].includes(ctx.body)) {
+                return fallBack("Por favor selecciona una opción válida *1, 2, 3*");
+            }
+        },
+        null,
+        [flowOperador, flowPagina, flowPedido]
+    );
+
+const flowBienvenida = addKeyword(["hola", 'pedido'])
+    .addAnswer('Bienvenido')
+    .addAnswer('🙌 Hola, Gracias por comunicarte a Sphera Digital, ¿en qué te podemos ayudar hoy?')
+    .addAnswer(
+        [
+            'Escribe el número para seleccionar la opción',
+            '👉 *1* Realizar un pedido',
+            '👉 *2* Página Web',
+            '👉 *3* Contactar con un operador',
+        ],
+        null,
+        { capture: true },
+        async (ctx, { fallBack }) => {
+            if (!['1', '2', '3'].includes(ctx.body)) {
+                return fallBack("Por favor selecciona una opción válida *1, 2, 3*");
+            }
+        },
+        null,
+        [flowOperador, flowPagina, flowPedido, flowMenuInicial]
+    );
+
+
+
+Funcion con carrito y catalogo
+
+const { createBot, createProvider, createFlow, addKeyword } = require('@bot-whatsapp/bot');
+const stripe = require('stripe')('TU_CLAVE_SECRETA_DE_STRIPE');
+
+// Flujo de bienvenida
+const flowBienvenida = addKeyword(['hola', 'inicio'])
+  .addAnswer('¡Bienvenido a nuestra tienda!')
+  .addAnswer('¿En qué te podemos ayudar hoy?')
+  .addAnswer(
+    [
+      'Selecciona una opción:',
+      '🛒 Ver catálogo',
+      '🛒 Ver carrito',
+    ],
+    null,
+    { capture: true }
+  );
+
+// Flujo del catálogo
+const flowCatalogo = addKeyword(['catálogo', 'productos'])
+  .addAnswer('Estos son nuestros productos:')
+  .addAnswer(
+    [
+      '1. Producto A',
+      '2. Producto B',
+      '3. Producto C',
+      // ... Agrega aquí más productos
+      '9. Regresar al menú principal',
+    ],
+    null,
+    { capture: true }
+  )
+  .addAnswer(
+    'Ingresa el número del producto que deseas añadir al carrito.',
+    null,
+    { capture: true },
+    async (ctx, { addToCart }) => {
+      const productNumber = parseInt(ctx.body);
+      if (productNumber >= 1 && productNumber <= 3) {
+        const product = obtenerProductoDelCatalogo(productNumber); // Función para obtener los detalles del producto
+        addToCart(product);
+        ctx.sendText('Producto añadido al carrito.');
+      } else if (productNumber === 9) {
+        ctx.goto(flowBienvenida);
+      } else {
+        ctx.sendText('Por favor, selecciona un número válido.');
+      }
+    }
+  );
+
+// Flujo de ver carrito
+const flowCarrito = addKeyword(['carrito'])
+  .addAnswer(
+    'Este es tu carrito:',
+    null,
+    null,
+    async (ctx, { getCartItems }) => {
+      const cartItems = getCartItems(); // Función para obtener los productos añadidos al carrito
+      if (cartItems.length > 0) {
+        const cartText = cartItems.map((item, index) => `${index + 1}. ${item.name} - ${item.price}`).join('\n');
+        ctx.sendText(`Productos en tu carrito:\n${cartText}`);
+        ctx.goto(flowConfirmarPago);
+      } else {
+        ctx.sendText('Tu carrito está vacío.');
+        ctx.goto(flowBienvenida);
+      }
+    }
+  );
+
+// Flujo de confirmar pago
+const flowConfirmarPago = addKeyword(['pagar', 'realizar pago'])
+  .addAnswer(
+    'Para realizar el pago, haz clic en el siguiente enlace:',
+    null,
+    null,
+    async (ctx, { getCartItems }) => {
+      const cartItems = getCartItems(); // Función para obtener los productos añadidos al carrito
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: cartItems.map(item => ({
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: item.name,
+            },
+            unit_amount: item.price * 100, // El precio debe estar en centavos
+          },
+          quantity: 1,
+        })),
+        mode: 'payment',
+        success_url: 'https://ejemplo.com/pago-exitoso',
+        cancel_url: 'https://ejemplo.com/pago-cancelado',
+      });
+
+      ctx.sendText(`Haz clic aquí para realizar el pago: ${session.url}`);
+    }
+  );
+
+// Función para obtener los detalles del producto desde el catálogo
+function obtenerProductoDelCatalogo(productNumber) {
+  // Aquí puedes implementar la lógica para obtener los detalles del producto
+  // según el número de producto seleccionado
+  // Retornar un objeto con los detalles del producto, como { name: 'Producto A', price: 10 }
+}
+
+// Funciones de gestión del carrito
+function addToCart(product) {
+  // Aquí puedes implementar la lógica para agregar el producto al carrito
+}
+
+function getCartItems() {
+  // Aquí puedes implementar la lógica para obtener los productos añadidos al carrito
+  // Retornar un array de objetos con los detalles de los productos
+}
+
+// Configuración del bot
+const adapterFlow = createFlow([flowBienvenida, flowCatalogo, flowCarrito, flowConfirmarPago]);
+const adapterProvider = createProvider(BaileysProvider);
+
+createBot({
+  flow: adapterFlow,
+  provider: adapterProvider,
+  // ...
+});
