@@ -17,6 +17,7 @@
         "@bot-whatsapp/portal": "^0.1.29",
         "@bot-whatsapp/provider": "^0.1.29",
         "google-spreadsheet": "^4.0.2",
+        "stripe": "^13.1.0",
         "wa-sticker-formatter": "^4.4.4"
     },
     "author": "",
