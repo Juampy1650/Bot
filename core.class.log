@@ -2,10 +2,10 @@
   key: {
     remoteJid: '5217661025461@s.whatsapp.net',
     fromMe: false,
-    id: 'F6D87C31FC65C5EE7404764A63146D03',
+    id: '231DF3CFF281BA2815D401D4EF347DC6',
     participant: undefined
   },
-  messageTimestamp: 1692378408,
+  messageTimestamp: 1693354732,
   pushName: 'Juan1650',
   broadcast: false,
   message: Message {
@@ -22,43 +22,19 @@
   key: {
     remoteJid: '5217661025461@s.whatsapp.net',
     fromMe: false,
-    id: '3B3128A5AFBD3037CAAD5EB55157CDFD',
+    id: 'ED2945B30BE043B7BB97CEA0ECF88A7C',
     participant: undefined
   },
-  messageTimestamp: 1692378415,
+  messageTimestamp: 1693354739,
   pushName: 'Juan1650',
   broadcast: false,
   message: Message {
-    conversation: '1',
+    conversation: 'Menu',
     messageContextInfo: MessageContextInfo {
       deviceListMetadata: [DeviceListMetadata],
       deviceListMetadataVersion: 2
     }
   },
-  body: '1',
-  from: '5217661025461'
-}
-[handleMsg]:  {
-  key: {
-    remoteJid: '5217661025461@s.whatsapp.net',
-    fromMe: false,
-    id: '94530298D2E970C52F7B1D29772B001A',
-    participant: undefined
-  },
-  messageTimestamp: 1692378426,
-  pushName: 'Juan1650',
-  broadcast: false,
-  message: Message {
-    locationMessage: LocationMessage {
-      degreesLatitude: 26.074455,
-      degreesLongitude: -98.3143581,
-      jpegThumbnail: [Uint8Array]
-    },
-    messageContextInfo: MessageContextInfo {
-      deviceListMetadata: [DeviceListMetadata],
-      deviceListMetadataVersion: 2
-    }
-  },
-  body: '_event_location__146f1511-4777-43d0-b14c-dd4a3557fee1',
+  body: 'Menu',
   from: '5217661025461'
 }

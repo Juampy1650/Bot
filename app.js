@@ -1,114 +1,126 @@
-const { createBot, createProvider, createFlow, addKeyword, EVENTS } = require('@bot-whatsapp/bot')
+import "dotenv/config";
+import bot from "@bot-whatsapp/bot";
+import { getDay } from "date-fns";
+import QRPortalWeb from "@bot-whatsapp/portal";
+import BaileysProvider from "@bot-whatsapp/provider/baileys";
+import MockAdapter from "@bot-whatsapp/database/mock";
 
-const QRPortalWeb = require('@bot-whatsapp/portal')
-const BaileysProvider = require('@bot-whatsapp/provider/baileys')
-const MockAdapter = require('@bot-whatsapp/database/mock')
+import chatgpt from "./services/openai/chatgpt.js";
+import GoogleSheetService from "./services/sheets/index.js";
 
-/**
- * Declaramos las conexiones de MySQL
- */
-/*const MYSQL_DB_HOST = 'localhost'
-const MYSQL_DB_USER = 'usr'
-const MYSQL_DB_PASSWORD = 'pass'
-const MYSQL_DB_NAME = 'bot'
-const MYSQL_DB_PORT = '3306'
-*/
+const googelSheet = new GoogleSheetService(
+  "1GZKJlfRcA_FV7RUPfA40FKJ9MBw0EnHpHGWTFMrU7X8"
+);
 
-/*
-const flowHor1 = addKeyword('1')
-    .addAnswer('🤝 ¡Excelente! Te contactaremos por este mismo chat, en el horario indicado. 😉')
+const GLOBAL_STATE = [];
 
-const flowHor2 = addKeyword('2')
-    .addAnswer('🤝 Fue un gusto atenderte')
+const flowPrincipal = bot
+  .addKeyword(["hola", "hi"])
+  .addAnswer([
+    `Bienvenidos a mi restaurante de cocina economica automatizado! 🚀`,
+    `Tenemos menus diarios variados`,
+    `Te gustaria conocerlos ¿?`,
+    `Escribe *menu*`,
+  ]);
 
-const flowPagina = addKeyword(['2','Pagina','web'])
-    .addAnswer('🙌 En Proceso')
-
-const flowUbicacion = addKeyword(EVENTS.LOCATION)
-    .addAnswer('Muchas gracias, Selecciona tu forma de pago')
-    .addAnswer(
-        [
-            'Escribe el numero para seleccionar la opcion',
-            '👉 *1* Paypal',
-            '👉 *2* Mercado pago',
-            '👉 *3* En efectivo al entregar',
-        ],
-        null,
-        null,
-    )
-
-const flowOperador = addKeyword(['3','operador'])
-    .addAnswer('😟 ¡Lo sentimos! 🚫 Nuestros ejecutivos no están disponibles por el momento. Vuelve a escribirnos en el siguiente horario de 9:00 a.m. a 9:00 p.m. y atenderemos tu consulta.')
-    .addAnswer(
-        [
-            '🤔 Elige un horario y con gusto te contactaremos 💬 para retomar tu solicitud hoy.',
-            'Escribe el dígito de la opción deseada:',
-            '👉*1* Entre 3:00 pm y 4:00 pm',
-            '👉*2* No es necesario'
-        ],
-        null,
-        null,
-    [flowHor1, flowHor2]
-    )
-
-const flowBienvenida = addKeyword(EVENTS.WELCOME)
-    .addAnswer('🙌 Hola, Gracias por comunicarte a Sphera Digital en que te podemos ayudar hoy')
-    .addAnswer(
-        [
-            'Escribe el numero para seleccionar la opcion',
-            '👉 *1* Realizar un pedido',
-            '👉 *2* Pagina Web',
-            '👉 *3* Contactactar con un operador',
-        ],
-        null,
-        null,
-        [flowPedido, flowPagina, flowOperador],
-        {capture: true},
-        async(ctx,{fallBack}) =>{
-            if(!['1','2','3'].includes(ctx.body)){
-                return fallBack('Esa opcion no es valida')
-            }
-
-        }
-    )
-*/
-const flowPedido = addKeyword(['Pedido','pedir','1'])
-    .addAnswer('Por favor comparte tu ubicacion aproximada',
-    {
-        media:'https://media.giphy.com/media/24g7VPicZiVwMnQ59T/giphy.mp4'
+const flowMenu = bot
+  .addKeyword("menu")
+  .addAnswer(
+    `Hoy tenemos el siguiente menu:`,
+    null,
+    async (_, { flowDynamic }) => {
+      const dayNumber = getDay(new Date());
+      const getMenu = await googelSheet.retriveDayMenu(dayNumber);
+      for (const menu of getMenu) {
+        GLOBAL_STATE.push(menu);
+        await flowDynamic(menu);
+      }
     }
-    )
+  )
+  .addAnswer(
+    `Te interesa alguno?`,
+    { capture: true },
+    async (ctx, { gotoFlow, state }) => {
+      const txt = ctx.body;
+      const check = await chatgpt.completion(`
+    Hoy el menu de comida es el siguiente:
+    "
+    ${GLOBAL_STATE.join("\n")}
+    "
+    El cliente quiere "${txt}"
+    Basado en el menu y lo que quiere el cliente determinar (EXISTE, NO_EXISTE).
+    La orden del cliente
+    `);
 
-const flowBienvenida = addKeyword("hola")
-    .addAnswer('Bienvenido')
-    .addAnswer('🙌 Hola, Gracias por comunicarte a Sphera Digital en que te podemos ayudar hoy')
-    .addAnswer(
-        [
-            'Escribe el numero para seleccionar la opcion',
-            '👉 *1* Realizar un pedido',
-            '👉 *2* Pagina Web',
-            '👉 *3* Contactactar con un operador',
-        ],
-        {capture:true},
-        async (ctx, {gotoFlow} ) =>{
-            if(ctx.body === '1'){
-                gotoFlow(flowPedido)
-            }
-        }
-    )
+      const getCheck = check.data.choices[0].text
+        .trim()
+        .replace("\n", "")
+        .replace(".", "")
+        .replace(" ", "");
+
+      if (getCheck.includes("NO_EXISTE")) {
+        return gotoFlow(flowEmpty);
+      } else {
+        state.update({pedido:ctx.body})
+        return gotoFlow(flowPedido);
+      }
+    }
+  );
+
+const flowEmpty = bot
+  .addKeyword(bot.EVENTS.ACTION)
+  .addAnswer("No te he entendido!", null, async (_, { gotoFlow }) => {
+    return gotoFlow(flowMenu);
+  });
+
+const flowPedido = bot
+  .addKeyword(["pedir"], { sensitive: true })
+  .addAnswer(
+    "¿Cual es tu nombre?",
+    { capture: true },
+    async (ctx, { state }) => {
+      state.update({ name: ctx.body });
+    }
+  )
+  .addAnswer(
+    "¿Alguna observacion?",
+    { capture: true },
+    async (ctx, { state }) => {
+      state.update({ observaciones: ctx.body });
+    }
+  )
+  .addAnswer(
+    "Perfecto tu pedido estara listo en un aprox 20min",
+    null,
+    async (ctx, { state }) => {
+        const currentState = state.getMyState();
+      await googelSheet.saveOrder({
+        fecha: new Date().toDateString(),
+        telefono: ctx.from,
+        pedido: currentState.pedido,
+        nombre: currentState.name,
+        observaciones: currentState.observaciones,
+      });
+    }
+  );
 
 const main = async () => {
-    const adapterDB = new MockAdapter()
-    const adapterFlow = createFlow([flowBienvenida])
-    const adapterProvider = createProvider(BaileysProvider)
+  const adapterDB = new MockAdapter();
+  const adapterFlow = bot.createFlow([
+    flowPrincipal,
+    flowMenu,
+    flowPedido,
+    flowEmpty,
+  ]);
+  const adapterProvider = bot.createProvider(BaileysProvider);
 
-    createBot({
-        flow: adapterFlow,
-        provider: adapterProvider,
-        database: adapterDB,
-    })
+  bot.createBot({
+    flow: adapterFlow,
+    provider: adapterProvider,
+    database: adapterDB,
+  });
 
-    QRPortalWeb()
-}
+  QRPortalWeb();
+};
 
-main()
+main();
